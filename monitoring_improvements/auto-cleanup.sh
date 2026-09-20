@@ -186,6 +186,7 @@ clean_app_caches() {
 check_disk_space() {
     local usage=$(df / | tail -1 | awk '{print $5}' | tr -d '%')
     log "INFO" "Disk usage: ${usage}%"
+    # Return just the number for arithmetic operations
     echo "$usage"
 }
 
@@ -245,7 +246,7 @@ main() {
     
     # Check disk space before
     local before_disk
-    before_disk=$(check_disk_space)
+    before_disk=$(check_disk_space | tail -1)
     
     # Perform cleanup operations
     if [ "$APT_CACHE_CLEAN" = true ]; then
