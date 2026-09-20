@@ -1,6 +1,31 @@
 # Token-Saving Toolkit Mode
 
-When working in AI_Agents directory, use runbook toolkit for modifications to save tokens:
+MANDATORY: When working in AI_Agents directory, ALWAYS use runbook toolkit for modifications to save tokens:
+
+## When to Use Toolkit
+- ANY file modifications (edit, write, create)
+- ANY system configuration changes
+- ANY multi-step operations
+- Operations involving 3+ tool calls
+
+## When Standard Tools Are OK
+- Single file reads for inspection
+- Simple queries (ls, status checks)
+- One-off commands without side effects
+
+## Toolkit Usage
 - Tool calls: 17-26 → 3-4 per operation (80% reduction)
 - Use: python -m runbook_toolkit execute --plan /tmp/artifacts/PLAN.json --artifacts-dir /tmp/artifacts
 - Path: /home/user/AI_Agents/runbook_toolkit
+
+## Process
+1. Create PLAN.json with all operations
+2. Execute toolkit with plan
+3. Verify results
+
+## Toolkit Development
+- After using toolkit for new operation types, consider:
+  - Adding reusable templates to /home/user/AI_Agents/runbook_toolkit/templates/
+  - Updating AGENT_INSTRUCTIONS.md with new patterns
+  - Improving toolkit modules if operation reveals gaps
+- Document new runbooks in /home/user/AI_Agents/runbook_toolkit/runbooks/

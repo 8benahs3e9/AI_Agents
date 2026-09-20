@@ -1,0 +1,131 @@
+{
+  "title": "VM Migration Analysis Template",
+  "version": "1.0",
+  "description": "Template for analyzing VM infrastructure and preparing for migration to different provider",
+  "created": "2026-09-20",
+  "author": "Devin AI",
+  "template_type": "vm_migration_analysis",
+  "operations": [
+    {
+      "step": 1,
+      "name": "analyze_current_vm_state",
+      "type": "diagnostic",
+      "description": "Analyze current VM configuration and running state",
+      "commands": [
+        {
+          "type": "read-only",
+          "command": "gcloud compute instances list --project=<PROJECT_ID>",
+          "purpose": "Get current VM instance status"
+        },
+        {
+          "type": "read-only",
+          "command": "gcloud compute instances describe <GATEWAY_NAME> --project=<PROJECT_ID> --zone=<ZONE> --format=json",
+          "purpose": "Get detailed gateway configuration"
+        },
+        {
+          "type": "read-only",
+          "command": "gcloud compute instances describe <BACKEND_NAME> --project=<PROJECT_ID> --zone=<ZONE> --format=json",
+          "purpose": "Get detailed backend configuration"
+        }
+      ]
+    },
+    {
+      "step": 2,
+      "name": "document_network_configuration",
+      "type": "diagnostic",
+      "description": "Document current network topology and dependencies",
+      "commands": [
+        {
+          "type": "read-only",
+          "command": "gcloud compute networks list --project=<PROJECT_ID>",
+          "purpose": "List VPC networks"
+        },
+        {
+          "type": "read-only",
+          "command": "gcloud compute firewall-rules list --project=<PROJECT_ID>",
+          "purpose": "Document firewall rules"
+        },
+        {
+          "type": "read-only",
+          "command": "gcloud compute routes list --project=<PROJECT_ID>",
+          "purpose": "Document routing configuration"
+        }
+      ]
+    },
+    {
+      "step": 3,
+      "name": "analyze_service_dependencies",
+      "type": "diagnostic",
+      "description": "Analyze service dependencies and integration points",
+      "commands": [
+        {
+          "type": "read-only",
+          "command": "systemctl list-units --type=service --state=running",
+          "purpose": "List running services on gateway"
+        },
+        {
+          "type": "read-only",
+          "command": "docker ps 2>/dev/null || echo 'No docker containers'",
+          "purpose": "Check for containerized services"
+        },
+        {
+          "type": "read-only",
+          "command": "df -h && free -h",
+          "purpose": "Check disk and memory usage"
+        }
+      ]
+    },
+    {
+      "step": 4,
+      "name": "backup_current_configs",
+      "type": "modification",
+      "description": "Backup current configurations for migration reference",
+      "commands": [
+        {
+          "type": "exec",
+          "command": "mkdir -p <BACKUP_DIR>",
+          "purpose": "Create backup directory"
+        },
+        {
+          "type": "exec",
+          "command": "tar -czf <BACKUP_DIR>/gateway_configs.tar.gz /etc/nginx /etc/unbound /etc/wireguard /etc/radicale /etc/postfix 2>/dev/null",
+          "purpose": "Backup gateway configuration files"
+        }
+      ]
+    },
+    {
+      "step": 5,
+      "name": "create_migration_documentation",
+      "type": "modification",
+      "description": "Create comprehensive migration documentation",
+      "commands": [
+        {
+          "type": "write",
+          "target": "<OUTPUT_DIR>/migration_analysis.md",
+          "content": "VM migration analysis document with current state, requirements, and migration plan",
+          "purpose": "Create migration analysis document"
+        },
+        {
+          "type": "write",
+          "target": "<OUTPUT_DIR>/migration_checklist.md",
+          "content": "Step-by-step migration checklist",
+          "purpose": "Create migration checklist"
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "PROJECT_ID": "GCP project ID",
+    "ZONE": "GCP zone (e.g., us-central1-a)",
+    "GATEWAY_NAME": "Gateway VM name",
+    "BACKEND_NAME": "Backend VM name",
+    "BACKUP_DIR": "Directory for configuration backups",
+    "OUTPUT_DIR": "Directory for migration documentation"
+  },
+  "notes": [
+    "This template assumes GCP as source provider - adapt commands for other providers",
+    "Service analysis assumes running on gateway VM - adjust if different",
+    "Backup paths should be customized based on actual service locations",
+    "Documentation templates should be customized with specific infrastructure details"
+  ]
+}

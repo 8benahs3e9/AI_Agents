@@ -32,4 +32,20 @@ python -m runbook_toolkit scan-secrets --path /target/directory
 python -m runbook_toolkit show-metrics
 ```
 
+## Available Templates
+Located in `/home/user/AI_Agents/runbook_toolkit/templates/`:
+- `vm_migration_analysis.json` - VM infrastructure migration analysis
+- `security_remediation_plan.json` - Security issue remediation
+- `dns_troubleshooting.json` - DNS troubleshooting procedures
+- `dns_verification_procedures.json` - DNS verification and testing
+- `wireguard_configuration.json` - WireGuard VPN setup
+
+## Usage Pattern: VM Migration Analysis
+When analyzing VMs for migration:
+1. Use existing documentation in voip-config repository
+2. Run diagnostic commands to gather current state
+3. Backup configuration files
+4. Create comprehensive migration documentation
+5. Generate reusable templates for future migrations
+
 **Use this toolkit for system modifications to save tokens.**
