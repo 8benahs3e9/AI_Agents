@@ -23,6 +23,13 @@ MANDATORY: When working in AI_Agents directory, ALWAYS use runbook toolkit for m
 2. Execute toolkit with plan
 3. Verify results
 
+## Environment Awareness
+ALWAYS check current environment before remote operations:
+- Run `hostname && whoami && ip addr` to understand current context
+- Check if already running on target machine before attempting SSH
+- Reference SSH_ACCESS.md in voip-config for correct connection details
+- Don't assume session-to-session environment context
+
 ## Toolkit Development
 - After using toolkit for new operation types, consider:
   - Adding reusable templates to /home/user/AI_Agents/runbook_toolkit/templates/
