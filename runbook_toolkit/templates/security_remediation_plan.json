@@ -1,0 +1,161 @@
+{
+  "goal": "Security remediation for repository - fix exposed credentials, IPs, and security vulnerabilities",
+  "description": "Automated security remediation using runbook toolkit with secret scanning, batch processing, and audit logging",
+  "version": "1.0",
+  "toolkit_location": "/home/user/AI_Agents/runbook_toolkit/",
+  
+  "scope": {
+    "include": [
+      "/home/user/voip-config/**",
+      "/home/user/voip-config/**/*.md",
+      "/home/user/voip-config/**/*.sh",
+      "/home/user/voip-config/**/config*"
+    ],
+    "exclude": [
+      ".git/**",
+      "node_modules/**",
+      "*.pyc",
+      "__pycache__/**"
+    ]
+  },
+
+  "pre_flight_checks": {
+    "resource_validation": true,
+    "disk_space_threshold": "2GB",
+    "memory_threshold": "90%",
+    "secret_scan": true,
+    "git_status_check": true
+  },
+
+  "operations": [
+    {
+      "type": "secret_scan",
+      "description": "Scan for exposed credentials and sensitive data",
+      "scan_patterns": [
+        "password\\s*=\\s*['\"][^'\"]+['\"]",
+        "\\b\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\b",
+        "api[_-]?key\\s*=\\s*['\"][^'\"]+['\"]",
+        "secret\\s*=\\s*['\"][^'\"]+['\"]",
+        "token\\s*=\\s*['\"][^'\"]+['\"]"
+      ],
+      "severity": ["CRITICAL", "HIGH", "MEDIUM"],
+      "output_file": "/tmp/artifacts/security_scan_results.json"
+    },
+    {
+      "type": "batch_replace",
+      "description": "Replace exposed IP addresses with placeholders",
+      "operations": [
+        {
+          "pattern": "35\\.209\\.115\\.187",
+          "replacement": "[GATEWAY_EXTERNAL_IP]",
+          "files": ["**/*.md", "**/*.sh", "**/config*"],
+          "case_sensitive": true
+        }
+      ]
+    },
+    {
+      "type": "batch_replace", 
+      "description": "Replace exposed credentials with REDACTED placeholders",
+      "operations": [
+        {
+          "pattern": "Linphone1001[!@]",
+          "replacement": "**REDACTED**",
+          "files": ["**/*.md", "**/pjsip.conf"],
+          "case_sensitive": true
+        },
+        {
+          "pattern": "Linphone1002[!@]",
+          "replacement": "**REDACTED**", 
+          "files": ["**/*.md", "**/pjsip.conf"],
+          "case_sensitive": true
+        }
+      ]
+    },
+    {
+      "type": "file_append",
+      "description": "Enhance .gitignore with sensitive file patterns",
+      "file": "/home/user/voip-config/.gitignore",
+      "content": "\n# Archive directory with sensitive configs\narchive/radicale_config_backup\narchive/radicale_nginx_config_backup\n",
+      "backup": true
+    },
+    {
+      "type": "file_update",
+      "description": "Update security audit report with remediation status",
+      "file": "/home/user/voip-config/SECURITY_AUDIT_REPORT_2026-08-03.md",
+      "updates": [
+        {
+          "search": "Overall Security Rating: 🔴 CRITICAL \\(3/10\\)",
+          "replace": "Overall Security Rating: 🟡 MEDIUM (6/10) - ✅ IMPROVED after fixes"
+        },
+        {
+          "search": "35\\.209\\.115\\.187 is exposed in 58\\+ locations",
+          "replace": "35.209.115.187 was exposed. ✅ FIXED: Replaced with [GATEWAY_EXTERNAL_IP] placeholder"
+        }
+      ],
+      "backup": true
+    },
+    {
+      "type": "file_delete",
+      "description": "Remove sensitive backup files from archive",
+      "files": [
+        "/home/user/voip-config/archive/radicale_config_backup",
+        "/home/user/voip-config/archive/radicale_nginx_config_backup"
+      ],
+      "backup": true
+    }
+  ],
+
+  "verification": {
+    "post_execution": [
+      {
+        "type": "secret_scan",
+        "description": "Verify no exposed credentials remain",
+        "compare_with_pre_scan": true
+      },
+      {
+        "type": "git_status",
+        "description": "Check git status for expected changes",
+        "expected_changes": "modified files present"
+      },
+      {
+        "type": "file_validation",
+        "description": "Validate modified files are syntactically correct",
+        "files": ["**/*.md", "**/*.sh", "**/.gitignore"]
+      }
+    ]
+  },
+
+  "rollback": {
+    "enabled": true,
+    "automatic_on_failure": true,
+    "backup_location": "/tmp/artifacts/backups/",
+    "backup_retention": "7 days"
+  },
+
+  "audit": {
+    "logging": true,
+    "cryptographic_signing": false,
+    "manifest_generation": true,
+    "integrity_verification": true
+  },
+
+  "optimization": {
+    "enable_caching": true,
+    "enable_metrics": true,
+    "enable_parallel": true,
+    "adaptive_tranche_sizing": true,
+    "tranche_size_range": [5, 20]
+  },
+
+  "approval_gates": {
+    "pre_execution": true,
+    "high_risk_operations": true,
+    "destructive_operations": true
+  },
+
+  "notifications": {
+    "on_success": false,
+    "on_failure": true,
+    "on_approval_required": true
+  }
+}

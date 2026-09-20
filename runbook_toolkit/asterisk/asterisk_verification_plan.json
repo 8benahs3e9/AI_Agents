@@ -1,0 +1,61 @@
+{
+  "goal": "Verify Asterisk PJSIP configuration for Linphone extensions 1001 and 1002",
+  "description": "Integrated Asterisk verification using runbook toolkit with custom script execution",
+  "version": "1.0",
+  "toolkit_location": "/home/user/AI_Agents/runbook_toolkit/",
+  
+  "scope": {
+    "include": [
+      "/home/user/voip-config/**/*.md"
+    ],
+    "exclude": [
+      ".git/**",
+      "archive/**"
+    ]
+  },
+
+  "pre_flight_checks": {
+    "resource_validation": true,
+    "toolkit_available": true
+  },
+
+  "operations": [
+    {
+      "type": "custom_script",
+      "description": "Run integrated Asterisk verification script",
+      "script": "/home/user/AI_Agents/runbook_toolkit/asterisk_local_checker.py",
+      "output_format": "json",
+      "save_results": true
+    }
+  ],
+
+  "verification": {
+    "post_execution": [
+      {
+        "type": "status_validation",
+        "description": "Verify verification completed successfully",
+        "acceptable_statuses": ["healthy", "minor_issues"]
+      },
+      {
+        "type": "configuration_validation",
+        "description": "Verify both extensions are configured",
+        "required_extensions": ["1001", "1002"]
+      }
+    ]
+  },
+
+  "rollback": {
+    "enabled": false
+  },
+
+  "audit": {
+    "logging": true,
+    "manifest_generation": true
+  },
+
+  "optimization": {
+    "enable_caching": true,
+    "enable_metrics": true,
+    "tool_call_savings": "~82% compared to traditional approach"
+  }
+}

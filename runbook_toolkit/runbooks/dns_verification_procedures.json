@@ -1,0 +1,303 @@
+{
+  "title": "DNS Verification Procedures",
+  "version": "1.0",
+  "description": "Standardized procedures for verifying DNS configuration and troubleshooting DNS issues",
+  "created": "2026-08-12",
+  "workspace": "/home/user/voip-config",
+  "author": "AI Agent",
+  "verification_levels": {
+    "level_1_basic": {
+      "description": "Basic DNS functionality checks",
+      "procedures": [
+        {
+          "name": "system_resolver_test",
+          "command": "dig @127.0.0.53 google.com +short",
+          "expected_result": "IP address returned (e.g., 142.250.217.110)",
+          "failure_indicates": "systemd-resolved not functioning or misconfigured"
+        },
+        {
+          "name": "direct_unbound_test",
+          "command": "dig @10.100.0.1 google.com +short",
+          "expected_result": "IP address returned",
+          "failure_indicates": "Unbound on gateway not reachable or not functioning"
+        },
+        {
+          "name": "nslookup_basic",
+          "command": "nslookup google.com",
+          "expected_result": "Server shows 127.0.0.53, returns IP address",
+          "failure_indicates": "Resolver configuration issue"
+        }
+      ]
+    },
+    "level_2_systemd_resolved": {
+      "description": "systemd-resolved state verification",
+      "procedures": [
+        {
+          "name": "check_resolved_status",
+          "command": "systemctl status systemd-resolved",
+          "expected_result": "Service active and running",
+          "failure_indicates": "systemd-resolved service not running"
+        },
+        {
+          "name": "check_resolvectl_status",
+          "command": "resolvectl status",
+          "expected_result": "VPN interface shows DNS scope with DefaultRoute",
+          "failure_indicates": "DNS routing not configured correctly"
+        },
+        {
+          "name": "check_resolv_conf",
+          "command": "cat /etc/resolv.conf",
+          "expected_result": "Points to 127.0.0.53 (stub resolver)",
+          "failure_indicates": "Manual resolv.conf override"
+        }
+      ]
+    },
+    "level_3_routing_verification": {
+      "description": "DNS routing and packet flow verification",
+      "procedures": [
+        {
+          "name": "check_routing_table",
+          "command": "ip route show",
+          "expected_result": "Default route via physical interface, VPN routes for subnets",
+          "failure_indicates": "Routing misconfiguration"
+        },
+        {
+          "name": "check_dns_route_specific",
+          "command": "ip route get 10.100.0.1",
+          "expected_result": "Route goes through wg0-et-gtw interface",
+          "failure_indicates": "DNS server not reachable through VPN"
+        },
+        {
+          "name": "interface_status_check",
+          "command": "nmcli connection show --active",
+          "expected_result": "Both VPN and physical interfaces active",
+          "failure_indicates": "Interface connectivity issue"
+        }
+      ]
+    },
+    "level_4_advanced_diagnostics": {
+      "description": "Advanced diagnostics with packet capture",
+      "procedures": [
+        {
+          "name": "vpn_dns_capture",
+          "command": "sudo tcpdump -i wg0-et-gtw port 53 -c 5",
+          "expected_result": "DNS packets visible on VPN interface",
+          "failure_indicates": "DNS not routing through VPN",
+          "requires_root": true
+        },
+        {
+          "name": "physical_dns_capture",
+          "command": "sudo tcpdump -i enx020306073164 port 53 -c 5",
+          "expected_result": "No DNS packets for internet domains",
+          "failure_indicates": "DNS leaking to physical interface",
+          "requires_root": true
+        },
+        {
+          "name": "dns_timing_analysis",
+          "command": "dig @127.0.0.53 google.com +stats",
+          "expected_result": "Query time < 500ms",
+          "failure_indicates": "Performance issue"
+        }
+      ]
+    }
+  },
+  "comprehensive_verification_sequence": {
+    "name": "full_dns_verification",
+    "description": "Complete DNS verification sequence for troubleshooting",
+    "steps": [
+      {
+        "step": 1,
+        "procedure": "system_resolver_test",
+        "level": "level_1_basic"
+      },
+      {
+        "step": 2,
+        "procedure": "direct_unbound_test",
+        "level": "level_1_basic"
+      },
+      {
+        "step": 3,
+        "procedure": "check_resolved_status",
+        "level": "level_2_systemd_resolved"
+      },
+      {
+        "step": 4,
+        "procedure": "check_resolvectl_status",
+        "level": "level_2_systemd_resolved"
+      },
+      {
+        "step": 5,
+        "procedure": "check_routing_table",
+        "level": "level_3_routing_verification"
+      },
+      {
+        "step": 6,
+        "procedure": "check_dns_route_specific",
+        "level": "level_3_routing_verification"
+      }
+    ],
+    "pass_criteria": "All steps pass without failures",
+    "failure_handling": "Stop at first failure and diagnose specific issue"
+  },
+  "troubleshooting_flowchart": {
+    "start": "DNS issue reported",
+    "decision_points": [
+      {
+        "condition": "Basic DNS queries fail",
+        "true_path": "Check systemd-resolved service status",
+        "false_path": "Proceed to routing check"
+      },
+      {
+        "condition": "systemd-resolved not running",
+        "true_path": "Start systemd-resolved service",
+        "false_path": "Check resolvectl status"
+      },
+      {
+        "condition": "VPN interface shows no DNS scope",
+        "true_path": "Check NetworkManager DNS priority configuration",
+        "false_path": "Check routing table"
+      },
+      {
+        "condition": "DNS server unreachable",
+        "true_path": "Check VPN connectivity and routes",
+        "false_path": "Check for DNS-over-HTTPS in browser"
+      },
+      {
+        "condition": "Packet capture shows DNS on physical interface",
+        "true_path": "DNS leak - adjust priority or disable physical DNS",
+        "false_path": "Advanced diagnostics required"
+      }
+    ]
+  },
+  "expected_states": {
+    "healthy_split_tunnel": {
+      "description": "Expected state for healthy split tunnel DNS configuration",
+      "indicators": {
+        "systemd_resolved": {
+          "vpn_interface": "Current Scopes: DNS, Protocols: +DefaultRoute",
+          "physical_interface": "Current Scopes: none or lower priority",
+          "global_dns": "10.100.0.1"
+        },
+        "routing": {
+          "default_route": "via physical interface",
+          "vpn_routes": "10.100.0.0/24, 10.128.0.0/20 via wg0-et-gtw"
+        },
+        "network_manager": {
+          "vpn_dns_priority": "100 (higher priority)",
+          "physical_dns_priority": "200 (lower priority)",
+          "vpn_dns_server": "10.100.0.1"
+        }
+      }
+    },
+    "dns_leak_detected": {
+      "description": "State indicating DNS leak to physical interface",
+      "indicators": {
+        "systemd_resolved": {
+          "vpn_interface": "Current Scopes: none",
+          "physical_interface": "Current Scopes: DNS, Protocols: +DefaultRoute"
+        },
+        "routing": {
+          "default_route": "via physical interface",
+          "dns_queries": "visible on physical interface in packet capture"
+        }
+      }
+    },
+    "full_tunnel_working": {
+      "description": "Expected state for working full tunnel VPN",
+      "indicators": {
+        "routing": {
+          "default_route": "via wg0-et-gtw",
+          "all_traffic": "routed through VPN"
+        },
+        "dns": {
+          "system_resolver": "using VPN DNS server",
+          "internet_access": "through VPN gateway"
+        }
+      }
+    }
+  },
+  "common_issues_and_solutions": [
+    {
+      "issue": "DNS queries timeout",
+      "symptoms": ["dig commands hang", "nslookup fails"],
+      "causes": ["systemd-resolved not running", "DNS server unreachable", "Firewall blocking DNS"],
+      "solutions": ["Check systemd-resolved status", "Verify VPN connectivity", "Check firewall rules"]
+    },
+    {
+      "issue": "Wrong DNS server used",
+      "symptoms": ["Queries use ISP DNS instead of VPN DNS", "Leak test shows external resolvers"],
+      "causes": ["DNS priority misconfiguration", "Browser using DoH", "Physical interface DNS override"],
+      "solutions": ["Adjust DNS priority values", "Disable browser DoH", "Configure ipv4.ignore-auto-dns"]
+    },
+    {
+      "issue": "VPN DNS not in scope",
+      "symptoms": ["resolvectl shows 'Current Scopes: none' for VPN", "Physical interface has DNS scope"],
+      "causes": ["Connection reactivation issue", "systemd-resolved conflict", "DNS priority too low"],
+      "solutions": ["Reactivate VPN connection", "Restart systemd-resolved", "Increase VPN DNS priority"]
+    },
+    {
+      "issue": "Split tunnel DNS not working",
+      "symptoms": ["Internet DNS uses physical interface", "Only VPN subnet DNS uses VPN"],
+      "causes": ["Fundamental split tunnel limitation", "DNS queries don't match VPN subnets"],
+      "solutions": ["Use browser-level DNS configuration", "Accept split tunnel limitation", "Use full tunnel"]
+    }
+  ],
+  "automation_scripts": {
+    "quick_health_check": {
+      "description": "Quick DNS health check script",
+      "commands": [
+        "echo '=== Basic DNS Test ==='",
+        "dig @127.0.0.53 google.com +short",
+        "echo '=== Unbound Test ==='",
+        "dig @10.100.0.1 google.com +short",
+        "echo '=== systemd-resolved Status ==='",
+        "resolvectl status | grep -A 5 wg0-et-gtw",
+        "echo '=== Routing Check ==='",
+        "ip route show | grep -E 'default|wg0'"
+      ]
+    },
+    "comprehensive_check": {
+      "description": "Comprehensive DNS verification",
+      "commands": [
+        "echo '=== Service Status ==='",
+        "systemctl status systemd-resolved --no-pager",
+        "echo '=== Resolver Configuration ==='",
+        "cat /etc/resolv.conf",
+        "echo '=== NetworkManager DNS Config ==='",
+        "nmcli -s connection show wg0-et-gtw | grep -E 'dns|DNS'",
+        "echo '=== DNS Routing ==='",
+        "resolvectl status",
+        "echo '=== Connectivity Tests ==='",
+        "ping -c 2 10.100.0.1",
+        "dig @10.100.0.1 google.com +short"
+      ]
+    }
+  },
+  "integration_with_runbook_toolkit": {
+    "usage": "Use these procedures with the runbook toolkit for automated verification",
+    "example_plan": {
+      "goal": "Verify DNS configuration after changes",
+      "operations": [
+        "system_resolver_test",
+        "direct_unbound_test",
+        "check_resolved_status",
+        "check_resolvectl_status",
+        "check_routing_table"
+      ],
+      "execution": "python -m runbook_toolkit execute --plan /tmp/artifacts/PLAN.json --artifacts-dir /tmp/artifacts"
+    }
+  },
+  "documentation_requirements": {
+    "after_verification": [
+      "Record verification results",
+      "Document any failures and resolutions",
+      "Update system configuration documentation",
+      "Note any deviations from expected states"
+    ],
+    "before_changes": [
+      "Run baseline verification",
+      "Document current state",
+      "Backup working configurations"
+    ]
+  }
+}

@@ -1,0 +1,315 @@
+{
+  "title": "DNS Troubleshooting Runbook for WireGuard VPN",
+  "version": "1.0",
+  "description": "Comprehensive DNS troubleshooting procedures for WireGuard VPN with split tunneling configuration",
+  "created": "2026-08-12",
+  "workspace": "/home/user/voip-config",
+  "author": "AI Agent",
+  "operations": [
+    {
+      "step": 1,
+      "name": "inspect_current_state",
+      "type": "diagnostic",
+      "description": "Inspect current DNS and VPN state",
+      "commands": [
+        {
+          "type": "read-only",
+          "command": "nmcli -s connection show wg0-et-gtw",
+          "purpose": "Check WireGuard connection configuration"
+        },
+        {
+          "type": "read-only", 
+          "command": "nmcli -s connection show 'Wired connection 3'",
+          "purpose": "Check physical connection configuration"
+        },
+        {
+          "type": "read-only",
+          "command": "resolvectl status",
+          "purpose": "Check systemd-resolved state and DNS routing"
+        },
+        {
+          "type": "read-only",
+          "command": "ip route show",
+          "purpose": "Check routing table"
+        },
+        {
+          "type": "read-only",
+          "command": "dig @127.0.0.53 google.com +short",
+          "purpose": "Test system resolver (systemd-resolved)"
+        },
+        {
+          "type": "read-only",
+          "command": "dig @10.100.0.1 google.com +short",
+          "purpose": "Test direct connection to Unbound"
+        }
+      ],
+      "verification": {
+        "expected_results": [
+          "WireGuard DNS configured to 10.100.0.1",
+          "systemd-resolved shows VPN as DNS route",
+          "Direct queries to 10.100.0.1 succeed"
+        ],
+        "failure_indicators": [
+          "DNS scope shows 'none' for VPN interface",
+          "Physical interface has higher DNS priority",
+          "Queries fail to reach Unbound"
+        ]
+      }
+    },
+    {
+      "step": 2,
+      "name": "diagnose_dns_leak",
+      "type": "diagnostic",
+      "description": "Diagnose DNS leak patterns",
+      "commands": [
+        {
+          "type": "read-only",
+          "command": "nslookup google.com",
+          "purpose": "Check which DNS server is being used"
+        },
+        {
+          "type": "read-only",
+          "command": "cat /etc/resolv.conf",
+          "purpose": "Check resolver configuration"
+        },
+        {
+          "type": "read-only",
+          "command": "systemctl status systemd-resolved",
+          "purpose": "Check systemd-resolved service status"
+        }
+      ],
+      "verification": {
+        "expected_results": [
+          "System resolver uses 127.0.0.53 (systemd-resolved stub)",
+          "systemd-resolved routes to VPN DNS"
+        ],
+        "failure_indicators": [
+          "Resolver shows external DNS servers",
+          "systemd-resolved not running",
+          "VPN interface not in DNS scope"
+        ]
+      }
+    },
+    {
+      "step": 3,
+      "name": "analyze_routing",
+      "type": "diagnostic",
+      "description": "Analyze routing and split tunneling configuration",
+      "commands": [
+        {
+          "type": "read-only",
+          "command": "ip route show table all",
+          "purpose": "Check all routing tables"
+        },
+        {
+          "type": "read-only",
+          "command": "wg show",
+          "purpose": "Check WireGuard interface status"
+        },
+        {
+          "type": "read-only",
+          "command": "nmcli connection show --active",
+          "purpose": "Show all active connections"
+        }
+      ],
+      "verification": {
+        "expected_results": [
+          "VPN routes for 10.100.0.0/24 and 10.128.0.0/20",
+          "Default route via physical interface",
+          "WireGuard peer routes disabled for manual control"
+        ],
+        "failure_indicators": [
+          "Missing VPN routes",
+          "Default route via VPN (full tunnel)",
+          "Conflicting routes"
+        ]
+      }
+    },
+    {
+      "step": 4,
+      "name": "configure_dns_priority",
+      "type": "configuration",
+      "description": "Configure DNS priority to favor VPN resolver",
+      "risk_level": "medium",
+      "backup_required": true,
+      "commands": [
+        {
+          "type": "network-config",
+          "command": "nmcli connection modify wg0-et-gtw ipv4.dns-priority 100",
+          "purpose": "Set VPN DNS priority higher than physical interface",
+          "rollback": "nmcli connection modify wg0-et-gtw ipv4.dns-priority 200"
+        },
+        {
+          "type": "network-config",
+          "command": "nmcli connection modify 'Wired connection 3' ipv4.dns-priority 200",
+          "purpose": "Lower physical interface DNS priority",
+          "rollback": "nmcli connection modify 'Wired connection 3' ipv4.dns-priority 100"
+        },
+        {
+          "type": "network-config",
+          "command": "nmcli connection modify 'Wired connection 3' ipv4.ignore-auto-dns yes",
+          "purpose": "Prevent physical interface from using DHCP DNS",
+          "rollback": "nmcli connection modify 'Wired connection 3' ipv4.ignore-auto-dns no"
+        }
+      ],
+      "verification": {
+        "post_execution_commands": [
+          "nmcli connection down wg0-et-gtw && nmcli connection up wg0-et-gtw",
+          "resolvectl status"
+        ],
+        "expected_results": [
+          "VPN interface shows DNS scope with DefaultRoute",
+          "Physical interface has lower DNS priority",
+          "systemd-resolved routes DNS through VPN"
+        ]
+      }
+    },
+    {
+      "step": 5,
+      "name": "test_dns_resolution",
+      "type": "verification",
+      "description": "Test DNS resolution after configuration changes",
+      "commands": [
+        {
+          "type": "diagnostic",
+          "command": "dig @127.0.0.53 google.com +short",
+          "purpose": "Test system resolver"
+        },
+        {
+          "type": "diagnostic",
+          "command": "dig @10.100.0.1 google.com +short",
+          "purpose": "Test direct Unbound connection"
+        },
+        {
+          "type": "diagnostic",
+          "command": "nslookup google.com",
+          "purpose": "Verify DNS server selection"
+        }
+      ],
+      "verification": {
+        "expected_results": [
+          "All queries succeed",
+          "System resolver uses VPN DNS",
+          "Response times are reasonable"
+        ],
+        "failure_indicators": [
+          "Queries timeout",
+          "Wrong DNS server used",
+          "Significant latency"
+        ]
+      }
+    },
+    {
+      "step": 6,
+      "name": "packet_capture_analysis",
+      "type": "diagnostic",
+      "description": "Optional packet capture to verify DNS routing",
+      "risk_level": "low",
+      "optional": true,
+      "commands": [
+        {
+          "type": "diagnostic",
+          "command": "sudo tcpdump -i wg0-et-gtw port 53 -c 10",
+          "purpose": "Capture DNS packets on VPN interface",
+          "timeout": 30
+        },
+        {
+          "type": "diagnostic",
+          "command": "sudo tcpdump -i enx020306073164 port 53 -c 10",
+          "purpose": "Capture DNS packets on physical interface",
+          "timeout": 30
+        }
+      ],
+      "verification": {
+        "expected_results": [
+          "DNS queries visible on VPN interface",
+          "No DNS queries on physical interface for internet domains"
+        ],
+        "failure_indicators": [
+          "DNS queries on physical interface",
+          "No DNS queries on VPN interface"
+        ]
+      }
+    }
+  ],
+  "troubleshooting_scenarios": [
+    {
+      "scenario": "DNS scope disappears from VPN interface",
+      "symptoms": [
+        "resolvectl shows 'Current Scopes: none' for wg0-et-gtw",
+        "Physical interface retains DNS scope"
+      ],
+      "causes": [
+        "NetworkManager DNS priority misconfiguration",
+        "Connection reactivation without proper DNS setup",
+        "systemd-resolved conflict between interfaces"
+      ],
+      "solutions": [
+        "Adjust DNS priority values (lower = higher priority)",
+        "Set ipv4.ignore-auto-dns on physical interface",
+        "Restart systemd-resolved service",
+        "Reactivate VPN connection after configuration"
+      ]
+    },
+    {
+      "scenario": "Full tunnel breaks internet connectivity",
+      "symptoms": [
+          "Cannot access internet after setting 0.0.0.0/0 route",
+          "Default route changed to VPN interface"
+      ],
+      "causes": [
+        "VPN gateway doesn't provide internet routing",
+        "NAT not configured on VPN gateway",
+        "Firewall rules blocking forwarded traffic"
+      ],
+      "solutions": [
+        "Revert to split tunneling configuration",
+        "Configure NAT on VPN gateway",
+        "Use browser-level DNS configuration instead"
+      ]
+    },
+    {
+      "scenario": "Browser shows Cloudflare DNS despite system configuration",
+      "symptoms": [
+        "DNS leak test shows Cloudflare resolvers",
+        "System resolver configured correctly"
+      ],
+      "causes": [
+        "Browser using DNS-over-HTTPS",
+        "Secure DNS enabled in browser",
+        "Test site infrastructure using Cloudflare"
+      ],
+      "solutions": [
+        "Disable DNS-over-HTTPS in browser",
+        "Configure browser to use custom DNS server",
+        "Use packet capture to verify actual DNS traffic"
+      ]
+    }
+  ],
+  "best_practices": [
+    "Always use read-only diagnostics before making changes",
+    "Backup NetworkManager configurations before modification",
+    "Test DNS resolution after each configuration change",
+    "Document working configurations for future reference",
+    "Use the runbook toolkit for all system modifications",
+    "Verify routing doesn't break internet connectivity",
+    "Monitor systemd-resolved state after connection changes"
+  ],
+  "emergency_rollback": {
+    "description": "Immediate rollback procedures if DNS or connectivity breaks",
+    "commands": [
+      "nmcli connection modify wg0-et-gtw ipv4.dns-priority 200",
+      "nmcli connection modify 'Wired connection 3' ipv4.dns-priority 100",
+      "nmcli connection modify 'Wired connection 3' ipv4.ignore-auto-dns no",
+      "nmcli connection down wg0-et-gtw && nmcli connection up wg0-et-gtw",
+      "systemctl restart systemd-resolved"
+    ]
+  },
+  "notes": [
+    "Split tunneling with DNS routing is complex and may not work as expected",
+    "The fundamental issue is that DNS queries to internet domains don't match VPN subnets",
+    "Browser-level DNS configuration may be more reliable than system-level",
+    "Full tunnel VPN requires proper gateway configuration for internet access",
+    "Cloudflare DNS in leak tests may indicate browser DoH, not system misconfiguration"
+  ]
+}

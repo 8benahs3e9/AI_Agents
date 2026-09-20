@@ -1,0 +1,388 @@
+{
+  "title": "WireGuard VPN Configuration Runbook",
+  "version": "1.0",
+  "description": "Safe configuration procedures for WireGuard VPN with NetworkManager integration",
+  "created": "2026-08-12",
+  "workspace": "/home/user/voip-config",
+  "author": "AI Agent",
+  "network_context": {
+    "local_vpn_address": "10.100.0.3/32",
+    "gateway_vpn_address": "10.100.0.1",
+    "vpn_subnet": "10.100.0.0/24",
+    "gcp_internal_subnet": "10.128.0.0/20",
+    "wireguard_endpoint": "35.209.115.187:51820",
+    "physical_interface": "enx020306073164",
+    "local_gateway": "192.168.42.129"
+  },
+  "operations": [
+    {
+      "step": 1,
+      "name": "inspect_wireguard_config",
+      "type": "diagnostic",
+      "description": "Inspect current WireGuard configuration",
+      "commands": [
+        {
+          "type": "read-only",
+          "command": "nmcli -s connection show wg0-et-gtw",
+          "purpose": "Check NetworkManager WireGuard profile"
+        },
+        {
+          "type": "read-only",
+          "command": "wg show",
+          "purpose": "Check WireGuard interface status"
+        },
+        {
+          "type": "read-only",
+          "command": "ip addr show wg0-et-gtw",
+          "purpose": "Verify interface addressing"
+        },
+        {
+          "type": "read-only",
+          "command": "ip route show | grep wg0",
+          "purpose": "Check WireGuard routes"
+        }
+      ],
+      "verification": {
+        "expected_results": [
+          "Interface has correct address (10.100.0.3/32)",
+          "Peer endpoint configured correctly",
+          "Routes for VPN and GCP subnets present"
+        ],
+        "failure_indicators": [
+          "Interface not configured",
+          "Missing peer configuration",
+          "Incorrect routing"
+        ]
+      }
+    },
+    {
+      "step": 2,
+      "name": "configure_split_tunneling",
+      "type": "configuration",
+      "description": "Configure split tunneling for selective VPN routing",
+      "risk_level": "medium",
+      "backup_required": true,
+      "commands": [
+        {
+          "type": "network-config",
+          "command": "nmcli connection modify wg0-et-gtw wireguard.peer-routes no",
+          "purpose": "Disable automatic peer routes for manual control",
+          "rollback": "nmcli connection modify wg0-et-gtw wireguard.peer-routes yes"
+        },
+        {
+          "type": "network-config",
+          "command": "nmcli connection modify wg0-et-gtw wireguard.ip4-auto-default-route no",
+          "purpose": "Disable automatic default route through VPN",
+          "rollback": "nmcli connection modify wg0-et-gtw wireguard.ip4-auto-default-route yes"
+        },
+        {
+          "type": "network-config",
+          "command": "nmcli connection modify wg0-et-gtw ipv4.routes '10.100.0.0/24 10.128.0.0/20'",
+          "purpose": "Add manual routes for VPN and GCP subnets",
+          "rollback": "nmcli connection modify wg0-et-gtw ipv4.routes ''"
+        }
+      ],
+      "verification": {
+        "post_execution_commands": [
+          "nmcli connection down wg0-et-gtw && nmcli connection up wg0-et-gtw",
+          "ip route show | grep wg0"
+        ],
+        "expected_results": [
+          "Only VPN and GCP subnets routed through WireGuard",
+          "Default route remains on physical interface",
+          "Internet access continues through physical interface"
+        ]
+      }
+    },
+    {
+      "step": 3,
+      "name": "configure_full_tunnel",
+      "type": "configuration",
+      "description": "Configure full tunnel VPN (routes all traffic through VPN)",
+      "risk_level": "high",
+      "backup_required": true,
+      "warning": "This will route all internet traffic through VPN. Ensure VPN gateway has internet access and NAT configured.",
+      "commands": [
+        {
+          "type": "network-config",
+          "command": "nmcli connection modify wg0-et-gtw wireguard.peer-routes no",
+          "purpose": "Disable automatic peer routes",
+          "rollback": "nmcli connection modify wg0-et-gtw wireguard.peer-routes yes"
+        },
+        {
+          "type": "network-config",
+          "command": "nmcli connection modify wg0-et-gtw wireguard.ip4-auto-default-route yes",
+          "purpose": "Enable automatic default route through VPN",
+          "rollback": "nmcli connection modify wg0-et-gtw wireguard.ip4-auto-default-route no"
+        },
+        {
+          "type": "network-config",
+          "command": "nmcli connection modify wg0-et-gtw ipv4.routes '0.0.0.0/0'",
+          "purpose": "Add default route through VPN",
+          "rollback": "nmcli connection modify wg0-et-gtw ipv4.routes '10.100.0.0/24 10.128.0.0/20'"
+        }
+      ],
+      "verification": {
+        "post_execution_commands": [
+          "nmcli connection down wg0-et-gtw && nmcli connection up wg0-et-gtw",
+          "ip route show",
+          "ping -c 2 8.8.8.8"
+        ],
+        "expected_results": [
+          "Default route through VPN interface",
+          "Internet connectivity maintained",
+          "All traffic routed through VPN"
+        ],
+        "failure_indicators": [
+          "Internet connectivity lost",
+          "Routing conflicts",
+          "High latency or packet loss"
+        ]
+      }
+    },
+    {
+      "step": 4,
+      "name": "configure_dns_for_vpn",
+      "type": "configuration",
+      "description": "Configure DNS settings for VPN connection",
+      "risk_level": "medium",
+      "backup_required": true,
+      "commands": [
+        {
+          "type": "network-config",
+          "command": "nmcli connection modify wg0-et-gtw ipv4.dns 10.100.0.1",
+          "purpose": "Set VPN DNS to Unbound resolver",
+          "rollback": "nmcli connection modify wg0-et-gtw ipv4.dns ''"
+        },
+        {
+          "type": "network-config",
+          "command": "nmcli connection modify wg0-et-gtw ipv4.dns-priority 100",
+          "purpose": "Set high priority for VPN DNS",
+          "rollback": "nmcli connection modify wg0-et-gtw ipv4.dns-priority 200"
+        },
+        {
+          "type": "network-config",
+          "command": "nmcli connection modify wg0-et-gtw ipv4.ignore-auto-dns yes",
+          "purpose": "Ignore automatic DNS from VPN peer",
+          "rollback": "nmcli connection modify wg0-et-gtw ipv4.ignore-auto-dns no"
+        }
+      ],
+      "verification": {
+        "post_execution_commands": [
+          "nmcli connection down wg0-et-gtw && nmcli connection up wg0-et-gtw",
+          "resolvectl status"
+        ],
+        "expected_results": [
+          "VPN interface shows DNS scope",
+          "systemd-resolved routes DNS through VPN",
+          "DNS queries use 10.100.0.1"
+        ]
+      }
+    },
+    {
+      "step": 5,
+      "name": "test_connectivity",
+      "type": "verification",
+      "description": "Test VPN connectivity and routing",
+      "commands": [
+        {
+          "type": "diagnostic",
+          "command": "ping -c 2 10.100.0.1",
+          "purpose": "Test VPN gateway connectivity"
+        },
+        {
+          "type": "diagnostic",
+          "command": "ping -c 2 10.128.0.6",
+          "purpose": "Test GCP Asterisk backend connectivity"
+        },
+        {
+          "type": "diagnostic",
+          "command": "dig @10.100.0.1 google.com +short",
+          "purpose": "Test DNS through VPN"
+        },
+        {
+          "type": "diagnostic",
+          "command": "ping -c 2 8.8.8.8",
+          "purpose": "Test internet connectivity"
+        }
+      ],
+      "verification": {
+        "expected_results": [
+          "VPN gateway reachable",
+          "GCP internal addresses reachable",
+          "DNS queries succeed",
+          "Internet accessible (if split tunnel)"
+        ],
+        "failure_indicators": [
+          "VPN gateway unreachable",
+          "GCP addresses unreachable",
+          "DNS queries fail",
+          "Internet connectivity lost"
+        ]
+      }
+    },
+    {
+      "step": 6,
+      "name": "emergency_rollback",
+      "type": "emergency",
+      "description": "Emergency rollback if VPN configuration breaks connectivity",
+      "risk_level": "high",
+      "commands": [
+        {
+          "type": "network-config",
+          "command": "nmcli connection down wg0-et-gtw",
+          "purpose": "Immediately disconnect VPN"
+        },
+        {
+          "type": "network-config",
+          "command": "nmcli connection modify wg0-et-gtw wireguard.ip4-auto-default-route no",
+          "purpose": "Disable full tunnel mode"
+        },
+        {
+          "type": "network-config",
+          "command": "nmcli connection modify wg0-et-gtw ipv4.routes '10.100.0.0/24 10.128.0.0/20'",
+          "purpose": "Restore split tunnel routes"
+        },
+        {
+          "type": "network-config",
+          "command": "nmcli connection modify wg0-et-gtw ipv4.dns-priority 200",
+          "purpose": "Lower VPN DNS priority"
+        },
+        {
+          "type": "network-config",
+          "command": "nmcli connection up wg0-et-gtw",
+          "purpose": "Reconnect VPN with safe defaults"
+        }
+      ],
+      "verification": {
+        "post_execution_commands": [
+          "ip route show",
+          "ping -c 2 8.8.8.8"
+        ],
+        "expected_results": [
+          "Internet connectivity restored",
+          "VPN connected in split tunnel mode",
+          "No routing conflicts"
+        ]
+      }
+    }
+  ],
+  "configuration_profiles": {
+    "split_tunnel": {
+      "description": "Only VPN and GCP traffic through VPN, internet through physical interface",
+      "settings": {
+        "wireguard.peer-routes": "no",
+        "wireguard.ip4-auto-default-route": "no",
+        "ipv4.routes": "10.100.0.0/24 10.128.0.0/20",
+        "ipv4.dns": "10.100.0.1",
+        "ipv4.dns-priority": "100"
+      },
+      "use_case": "Normal operation with selective VPN routing"
+    },
+    "full_tunnel": {
+      "description": "All traffic through VPN (requires gateway internet access)",
+      "settings": {
+        "wireguard.peer-routes": "no",
+        "wireguard.ip4-auto-default-route": "yes",
+        "ipv4.routes": "0.0.0.0/0",
+        "ipv4.dns": "10.100.0.1",
+        "ipv4.dns-priority": "100"
+      },
+      "use_case": "Complete traffic anonymization through VPN",
+      "prerequisites": [
+        "VPN gateway must have internet access",
+        "NAT configured on VPN gateway",
+        "Sufficient bandwidth on VPN connection"
+      ]
+    }
+  },
+  "troubleshooting_scenarios": [
+    {
+      "scenario": "VPN connection fails to establish",
+      "symptoms": [
+        "Interface not created",
+        "Connection stuck in activating state",
+        "Peer handshake timeout"
+      ],
+      "diagnostic_commands": [
+        "journalctl -u NetworkManager -n 50",
+        "wg show",
+        "nmcli connection show wg0-et-gtw"
+      ],
+      "solutions": [
+        "Check WireGuard keys are correct",
+        "Verify endpoint is reachable",
+        "Check firewall rules allow UDP 51820",
+        "Verify peer public key matches gateway"
+      ]
+    },
+    {
+      "scenario": "VPN connects but no internal connectivity",
+      "symptoms": [
+        "VPN interface up but can't reach internal addresses",
+        "Handshake successful but no traffic"
+      ],
+      "diagnostic_commands": [
+        "ip route show",
+        "ping -c 2 10.100.0.1",
+        "tcpdump -i wg0-et-gtw -c 10"
+      ],
+      "solutions": [
+        "Check AllowedIPs configuration",
+        "Verify routing table includes VPN subnets",
+        "Check gateway firewall rules",
+        "Verify peer configuration on gateway"
+      ]
+    },
+    {
+      "scenario": "VPN causes internet connectivity loss",
+      "symptoms": [
+        "Internet becomes unreachable when VPN is up",
+        "DNS queries timeout",
+        "High latency"
+      ],
+      "diagnostic_commands": [
+        "ip route show",
+        "ping -c 2 8.8.8.8",
+        "traceroute 8.8.8.8"
+      ],
+      "solutions": [
+        "Revert to split tunnel configuration",
+        "Check if full tunnel is unintentionally enabled",
+        "Verify VPN gateway has internet access",
+        "Check for routing conflicts"
+      ]
+    }
+  ],
+  "best_practices": [
+    "Always backup working configurations before changes",
+    "Test connectivity after each configuration change",
+    "Use split tunneling for normal operations",
+    "Only use full tunnel if VPN gateway is properly configured",
+    "Monitor systemd-resolved state when changing DNS settings",
+    "Document working configurations for quick recovery",
+    "Use packet capture for complex routing issues",
+    "Keep WireGuard keys secure and never expose them"
+  ],
+  "safety_notes": [
+    "WireGuard private keys are sensitive - never expose in logs or outputs",
+    "Full tunnel VPN can break internet if gateway not configured properly",
+    "DNS configuration changes can affect system-wide resolution",
+    "Always have emergency rollback procedures ready",
+    "Test in non-production environments first",
+    "Monitor system logs after configuration changes"
+  ],
+  "integration_with_runbook_toolkit": {
+    "usage": "Use this runbook with the runbook toolkit for safe execution",
+    "example_plan": {
+      "goal": "Configure WireGuard split tunneling with DNS",
+      "operations": [
+        "inspect_wireguard_config",
+        "configure_split_tunneling",
+        "configure_dns_for_vpn",
+        "test_connectivity"
+      ],
+      "execution": "python -m runbook_toolkit execute --plan /tmp/artifacts/PLAN.json --artifacts-dir /tmp/artifacts"
+    }
+  }
+}
