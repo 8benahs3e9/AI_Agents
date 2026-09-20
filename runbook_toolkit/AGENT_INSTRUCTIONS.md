@@ -35,6 +35,7 @@ python -m runbook_toolkit show-metrics
 ## Available Templates
 Located in `/home/user/AI_Agents/runbook_toolkit/templates/`:
 - `vm_migration_analysis.json` - VM infrastructure migration analysis
+- `documentation_consolidation.json` - Documentation repository consolidation
 - `security_remediation_plan.json` - Security issue remediation
 - `dns_troubleshooting.json` - DNS troubleshooting procedures
 - `dns_verification_procedures.json` - DNS verification and testing
@@ -47,5 +48,13 @@ When analyzing VMs for migration:
 3. Backup configuration files
 4. Create comprehensive migration documentation
 5. Generate reusable templates for future migrations
+
+## Usage Pattern: Documentation Consolidation
+When consolidating documentation repositories:
+1. Analyze current documentation structure and file dates
+2. Verify system state against documented information
+3. Create consolidation report with recommendations
+4. Update core documentation with current state
+5. Archive outdated files to maintain clean structure
 
 **Use this toolkit for system modifications to save tokens.**

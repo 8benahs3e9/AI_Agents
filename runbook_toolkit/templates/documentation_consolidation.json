@@ -1,0 +1,127 @@
+{
+  "title": "Documentation Consolidation Template",
+  "version": "1.0",
+  "description": "Template for analyzing and consolidating documentation repositories",
+  "created": "2026-09-20",
+  "author": "Devin AI",
+  "template_type": "documentation_consolidation",
+  "operations": [
+    {
+      "step": 1,
+      "name": "analyze_documentation_structure",
+      "type": "diagnostic",
+      "description": "Analyze current documentation structure and identify issues",
+      "commands": [
+        {
+          "type": "read-only",
+          "command": "find . -name '*.md' -type f | wc -l",
+          "purpose": "Count total markdown files"
+        },
+        {
+          "type": "read-only",
+          "command": "find . -name '*.md' -type f -exec ls -la {} \\; | awk '{print $6, $7, $8, $9}'",
+          "purpose": "Get file dates and names"
+        },
+        {
+          "type": "read-only",
+          "command": "grep -r '<OUTDATED_DATE_PATTERN>' *.md | wc -l",
+          "purpose": "Count outdated date references"
+        }
+      ]
+    },
+    {
+      "step": 2,
+      "name": "verify_system_state",
+      "type": "diagnostic",
+      "description": "Verify current system state against documentation",
+      "commands": [
+        {
+          "type": "read-only",
+          "command": "hostname && whoami",
+          "purpose": "Confirm current environment"
+        },
+        {
+          "type": "read-only",
+          "command": "systemctl list-units --type=service --state=running | wc -l",
+          "purpose": "Count running services"
+        },
+        {
+          "type": "read-only",
+          "command": "df -h / | awk 'NR==2 {print $5}'",
+          "purpose": "Check disk usage"
+        }
+      ]
+    },
+    {
+      "step": 3,
+      "name": "create_consolidation_report",
+      "type": "modification",
+      "description": "Create comprehensive consolidation analysis",
+      "commands": [
+        {
+          "type": "write",
+          "target": "<TARGET_DIR>/CONSOLIDATION_REPORT.md",
+          "content": "Documentation consolidation analysis with findings, recommendations, and implementation plan",
+          "purpose": "Create consolidation report"
+        }
+      ]
+    },
+    {
+      "step": 4,
+      "name": "update_core_documentation",
+      "type": "modification",
+      "description": "Update core documentation files with current state",
+      "commands": [
+        {
+          "type": "write",
+          "target": "<TARGET_DIR>/README_UPDATED.md",
+          "content": "Updated README with current system state and accurate references",
+          "purpose": "Create updated README"
+        },
+        {
+          "type": "edit",
+          "target": "<TARGET_DIR>/DOCUMENTATION_INDEX.md",
+          "content": "Update documentation index to reflect new structure",
+          "purpose": "Update documentation index"
+        }
+      ]
+    },
+    {
+      "step": 5,
+      "name": "archive_outdated_files",
+      "type": "modification",
+      "description": "Move outdated documentation to archive directory",
+      "commands": [
+        {
+          "type": "exec",
+          "command": "mkdir -p <TARGET_DIR>/archive/<ARCHIVE_DIR>",
+          "purpose": "Create archive directory for old files"
+        },
+        {
+          "type": "exec",
+          "command": "mv <TARGET_DIR>/*<OUTDATED_PATTERN>*.md <TARGET_DIR>/archive/<ARCHIVE_DIR>/ 2>/dev/null || echo 'Files already moved or not found'",
+          "purpose": "Move outdated files to archive"
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "TARGET_DIR": "Target documentation directory",
+    "OUTDATED_DATE_PATTERN": "Date pattern to identify outdated files (e.g., 2026-06-25)",
+    "ARCHIVE_DIR": "Directory name for archived files (e.g., 2026-06-25_audits)"
+  },
+  "notes": [
+    "This template assumes markdown documentation files - adjust for other formats",
+    "System verification commands assume Linux environment - adapt for other systems",
+    "File patterns should be customized based on actual naming conventions",
+    "Archive structure should follow organizational standards",
+    "Always test consolidation on non-production systems first"
+  ],
+  "best_practices": [
+    "Create backup before moving files",
+    "Update cross-references after consolidation",
+    "Test new structure before committing",
+    "Document consolidation rationale",
+    "Maintain change log for documentation updates"
+  ]
+}
