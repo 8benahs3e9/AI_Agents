@@ -1,26 +1,24 @@
 # AI_Agents Workspace Configuration
 
-This directory contains all configuration for the AI_Agents workspace.
+## Token-Saving Mode
 
-## Runbook Toolkit Enforcement
+This workspace uses runbook toolkit for token-efficient operations:
+- **Tool call reduction**: 17-26 → 3-4 per operation (80% savings)
+- **Batch processing**: Handle multiple operations in single call
+- **Caching**: Avoid repeated expensive operations
 
-The `runbook-toolkit-enforcer` skill ensures all AI agents use the runbook toolkit for system modifications when working in this workspace.
+## Usage
 
-## Configuration Structure
+When modifying files or running commands in this workspace, use the runbook toolkit:
+```bash
+python -m runbook_toolkit execute --plan /tmp/artifacts/PLAN.json --artifacts-dir /tmp/artifacts
+```
 
-All workspace-specific configuration is consolidated in this `.devin/` directory:
+## Configuration
 
-- `skills/runbook-toolkit-enforcer/SKILL.md` - Runbook toolkit enforcement skill
-- `README.md` - This documentation file
+- `TOOLKIT_MODE` - Token-saving instructions (minimal overhead)
+- `README.md` - This file
 
-## Runbook Toolkit
+## Toolkit Location
 
-- **Toolkit Path**: `/home/user/AI_Agents/runbook_toolkit`
-- **Artifacts Directory**: `/tmp/artifacts`
-- **Enforcement Mode**: Strict
-
-## Documentation
-
-- Full instructions: `/home/user/AI_Agents/runbook_toolkit/AGENT_INSTRUCTIONS.md`
-- Enforcement strategy: `/home/user/AI_Agents/runbook_toolkit/ENFORCEMENT_STRATEGY.md`
-- Quick start: `/home/user/AI_Agents/runbook_toolkit/ENFORCEMENT_QUICKSTART.md`
+`/home/user/AI_Agents/runbook_toolkit`

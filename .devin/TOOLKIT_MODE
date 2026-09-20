@@ -1,0 +1,6 @@
+# Token-Saving Toolkit Mode
+
+When working in AI_Agents directory, use runbook toolkit for modifications to save tokens:
+- Tool calls: 17-26 → 3-4 per operation (80% reduction)
+- Use: python -m runbook_toolkit execute --plan /tmp/artifacts/PLAN.json --artifacts-dir /tmp/artifacts
+- Path: /home/user/AI_Agents/runbook_toolkit
