@@ -1,0 +1,16 @@
+[Unit]
+Description=Certbot Automatic Renewal Timer
+Documentation=https://letsencrypt.org/docs/
+Requires=certbot-renewal.service
+
+[Timer]
+# Run twice daily at midnight and noon
+OnCalendar=*-*-* 00:00:00
+OnCalendar=*-*-* 12:00:00
+# Run immediately if timer was missed
+Persistent=true
+# Randomize start time by up to 1 hour
+RandomizedDelaySec=3600
+
+[Install]
+WantedBy=timers.target

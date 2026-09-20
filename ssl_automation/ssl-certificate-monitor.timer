@@ -1,0 +1,16 @@
+[Unit]
+Description=SSL Certificate Monitoring Timer
+Documentation=https://letsencrypt.org/docs/
+Requires=ssl-certificate-monitor.service
+
+[Timer]
+# Run twice daily at 3 AM and 3 PM
+OnCalendar=*-*-* 03:00:00
+OnCalendar=*-*-* 15:00:00
+# Run immediately if timer was missed (e.g., system was off)
+Persistent=true
+# Randomize start time by up to 30 minutes to avoid load spikes
+RandomizedDelaySec=1800
+
+[Install]
+WantedBy=timers.target

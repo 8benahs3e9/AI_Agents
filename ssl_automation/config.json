@@ -1,0 +1,26 @@
+{
+  "domains": [
+    "calendar.shatsie.fun",
+    "connect.shatsie.fun",
+    "gotify.shatsie.fun"
+  ],
+  "cert_path": "/etc/letsencrypt/live",
+  "renewal_threshold_days": 30,
+  "email_alerts": {
+    "enabled": true,
+    "smtp_server": "smtp.gmail.com",
+    "smtp_port": 587,
+    "smtp_username": "your-email@gmail.com",
+    "smtp_password": "your-app-specific-password",
+    "recipients": ["admin@shatsie.fun"]
+  },
+  "webhook_url": null,
+  "dry_run": false,
+  "log_level": "INFO",
+  "health_report_path": "/var/log/ssl_certificate_health_report.json",
+  "monitoring": {
+    "enabled": true,
+    "check_interval_hours": 6,
+    "alert_threshold_days": 7
+  }
+}
