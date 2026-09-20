@@ -1,0 +1,74 @@
+# Custom Health Monitoring Logs Rotation
+# Manages log rotation for custom monitoring scripts
+
+/var/log/system-health.log {
+    daily
+    rotate 7
+    compress
+    delaycompress
+    missingok
+    notifempty
+    size 10M
+    maxage 30
+    create 0644 root adm
+}
+
+/var/log/security-monitor.log {
+    daily
+    rotate 7
+    compress
+    delaycompress
+    missingok
+    notifempty
+    size 5M
+    maxage 30
+    create 0644 root adm
+}
+
+/var/log/gateway-health-monitor.log {
+    daily
+    rotate 7
+    compress
+    delaycompress
+    missingok
+    notifempty
+    size 10M
+    maxage 30
+    create 0644 root adm
+}
+
+/var/log/disk-warning.log {
+    daily
+    rotate 5
+    compress
+    delaycompress
+    missingok
+    notifempty
+    size 2M
+    maxage 14
+    create 0644 root adm
+}
+
+/var/log/ssl_certificate_manager.log {
+    daily
+    rotate 7
+    compress
+    delaycompress
+    missingok
+    notifempty
+    size 5M
+    maxage 30
+    create 0644 root adm
+}
+
+/var/log/ssl_certificate_monitor.log {
+    daily
+    rotate 7
+    compress
+    delaycompress
+    missingok
+    notifempty
+    size 5M
+    maxage 30
+    create 0644 root adm
+}
