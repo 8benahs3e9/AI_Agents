@@ -1,0 +1,78 @@
+{
+  "goal": "Runbook Toolkit Health Check",
+  "description": "Verify toolkit dependencies, configuration, and operational status",
+  "version": "1.0",
+  "toolkit_location": "/home/user/AI_Agents/runbook_toolkit/",
+  
+  "scope": {
+    "include": ["system", "dependencies", "configuration", "permissions"],
+    "exclude": []
+  },
+
+  "pre_flight_checks": {
+    "resource_validation": true,
+    "disk_space_threshold": "1GB",
+    "memory_threshold": "80%",
+    "dependency_check": true
+  },
+
+  "operations": [
+    {
+      "type": "check_dependencies",
+      "description": "Verify Python dependencies are installed",
+      "dependencies": ["pyyaml", "requests"],
+      "python_version": "3.8+"
+    },
+    {
+      "type": "check_directories",
+      "description": "Verify required directories exist and are accessible",
+      "directories": ["templates", "runbooks", "asterisk"]
+    },
+    {
+      "type": "check_permissions",
+      "description": "Verify file permissions for toolkit files",
+      "executable_files": ["__main__.py", "*.py"],
+      "readable_files": ["templates/*", "runbooks/*"]
+    },
+    {
+      "type": "validate_templates",
+      "description": "Validate JSON templates in templates directory",
+      "template_directory": "templates/"
+    },
+    {
+      "type": "check_cache",
+      "description": "Check cache directory status and size",
+      "cache_dir": "~/.runbook_cache",
+      "max_size_mb": 100
+    },
+    {
+      "type": "check_metrics",
+      "description": "Check metrics directory and recent data",
+      "metrics_dir": "~/.runbook_metrics"
+    }
+  ],
+
+  "verification": {
+    "post_execution": [
+      {
+        "type": "generate_report",
+        "description": "Generate health check report",
+        "output_file": "/tmp/toolkit_health_report.json"
+      }
+    ]
+  },
+
+  "rollback": {
+    "enabled": false
+  },
+
+  "audit": {
+    "logging": true,
+    "cryptographic_signing": false
+  },
+
+  "optimization": {
+    "enable_caching": true,
+    "enable_metrics": true
+  }
+}
