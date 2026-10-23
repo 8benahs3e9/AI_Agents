@@ -161,6 +161,7 @@ sudo rm /etc/logrotate.d/custom-health-logs
 ---
 
 ## Related Documentation
+- `/home/user/AI_Agents/VM_SETUP_GUIDE.md` - **COMPREHENSIVE VM SETUP GUIDE** - Complete reproduction guide for entire gateway VM setup (2026-10-23)
 - `/home/user/AI_Agents/resource_fix_scripts/DEPLOYMENT_GUIDE.md` - Detailed deployment guide
 - `/home/user/AI_Agents/resource_fix_scripts/README.md` - Quick start guide
 - `/home/user/AI_Agents/RESOURCE_MONITORING_ANALYSIS_2026-09-20.md` - Original analysis
@@ -169,6 +170,7 @@ sudo rm /etc/logrotate.d/custom-health-logs
 - `/home/user/AI_Agents/SSH_HARDENING_PHASE1_STATUS.md` - SSH hardening Phase 1 status and IAP tunnel instructions (2026-10-06)
 - `/home/user/AI_Agents/SHADOWSOCKS_V2RAY_INTEGRATION_2026-10-08.md` - Shadowsocks V2Ray + Nginx integration documentation (2026-10-08)
 - `/home/user/AI_Agents/SHADOWSOCKS_CORRECTION_2026-10-08.md` - Correction of previous incorrect analysis (2026-10-08)
+- `/home/user/AI_Agents/SHADOWSOCKS_MISIDENTIFICATION_ANALYSIS_2026-10-08.md` - Analysis of why Shadowsocks was misidentified as manual process (2026-10-08)
 - `/home/user/AI_Agents/DNS_LEAK_PREVENTION_PHASE4_STATUS.md` - DNS leak prevention Phase 4 status (2026-10-07)
 
 ### Historical Documentation (Archived)
@@ -376,6 +378,6 @@ Client → Shadowsocks (encrypted) → 10.100.0.1 (Unbound) → DNS-over-TLS (en
 
 ---
 
-**Last Updated:** 2026-10-08
-**Next Review:** 2026-10-15 (1 week)
+**Last Updated:** 2026-10-23
+**Next Review:** 2026-10-30 (1 week)
 **Action Required**: Reconfigure clients to use V2Ray WebSocket configuration (connect.shatsie.fun with WSS path /assets/telemetry/ws-7f3a91c2)
